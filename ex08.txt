@@ -1,0 +1,34 @@
+PHẦN 1: PHÂN TÍCH LỖI
+
+1. Các dòng lệnh gây ra lỗi mất dữ liệu lịch sử và nguyên nhân kỹ thuật:
+- Toàn bộ 3 dòng lệnh trong script `hourly_log.ps1` hiện tại đều sử dụng cmdlet `Out-File` mặc định:
+  + Dòng 1: `"[$(Get-Date)] --- Bat dau quet ---" | Out-File weekly_errors.txt`
+  + Dòng 2: `Select-String -Path app.log -Pattern "error" | Out-File weekly_errors.txt`
+  + Dòng 3: `"[$(Get-Date)] --- Ket thuc quet ---" | Out-File weekly_errors.txt`
+- Nguyên nhân kỹ thuật: Mặc định, `Out-File` (hoặc toán tử `>`) có cơ chế **ghi đè (overwrite)**. Nghĩa là mỗi khi lệnh được thực thi, nó sẽ xóa sạch toàn bộ nội dung cũ đang có trong file `weekly_errors.txt` rồi mới ghi dữ liệu mới vào.
+
+2. Điều còn sót lại trong file weekly_errors.txt sau mỗi lần script chạy:
+- Do tính chất ghi đè liên tục của từng dòng trong script:
+  + Lệnh 1 tạo và ghi dòng "Bắt đầu".
+  + Lệnh 2 chạy ngay sau đó sẽ xóa sạch dòng "Bắt đầu" và ghi đè kết quả tìm kiếm lỗi (`Select-String`).
+  + Lệnh 3 chạy cuối cùng sẽ xóa sạch kết quả tìm kiếm lỗi và chỉ ghi lại dòng kết thúc ("Kết thúc quét").
+- Kết quả thực tế: Sau mỗi lần script chạy, file `weekly_errors.txt` **chỉ còn sót lại duy nhất dòng thông báo kết thúc** của lần chạy giờ cuối cùng đó, toàn bộ lịch sử trước đó và các dữ liệu lỗi đều bị biến mất hoàn toàn.
+
+
+PHẦN 2: SỬA LỖI VÀ KIỂM THỬ
+
+1. Phiên bản script đã sửa đúng quy trình cộng dồn (thêm tham số `-Append`):
+# Script: hourly_log.ps1 (Đã sửa lỗi ghi đè)
+# Chạy mỗi giờ, cộng dồn lỗi vào weekly_errors.txt mà không làm mất lịch sử cũ
+
+"[$(Get-Date)] --- Bat dau quet ---" | Out-File -Append weekly_errors.txt
+Select-String -Path app.log -Pattern "error" | Out-File -Append weekly_errors.txt
+"[$(Get-Date)] --- Ket thuc quet ---" | Out-File -Append weekly_errors.txt
+
+2. Bảng so sánh giữa Out-File (ghi đè) và Out-File -Append / Add-Content (ghi nối):
+
+| Tiêu chí | Out-File (Mặc định) | Out-File -Append / Add-Content |
+| :--- | :--- | :--- |
+| **Cơ chế hoạt động** | Ghi đè (Overwrite): Xóa toàn bộ nội dung cũ trong file và ghi nội dung mới hoàn toàn vào. | Ghi nối (Append): Giữ nguyên nội dung cũ và bổ sung nội dung mới xuống các dòng tiếp theo ở cuối file. |
+| **Trạng thái file cũ** | Bị mất sạch dữ liệu sau khi lệnh thực thi. | Được bảo lưu nguyên vẹn, dữ liệu mới được cộng dồn tích lũy theo thời gian. |
+| **Ứng dụng thực tế** | Dùng khi tạo mới file báo cáo, ghi log trắng từ đầu mỗi phiên chạy. | Dùng cho hệ thống nhật ký (log) 24/7 cần lưu vết lịch sử theo giờ, ngày, tuần. |
