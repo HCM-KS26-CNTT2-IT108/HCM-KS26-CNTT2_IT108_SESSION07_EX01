@@ -1,0 +1,19 @@
+PHẦN 1: PHÂN TÍCH
+
+1. Tại sao lệnh `cat` của Nam hiển thị quá nhiều dữ liệu và làm Terminal bị đơ?
+- Trong PowerShell, lệnh `cat` thực chất là một alias (bí danh) của lệnh `Get-Content`.
+- Khi chạy lệnh `cat server_log_500MB.log`, PowerShell cố gắng đọc toàn bộ dung lượng 500MB của file log và in toàn bộ ra màn hình ngay lập tức.
+- Do lượng dữ liệu quá lớn (hàng triệu dòng), bộ nhớ đệm (buffer) của Terminal bị quá tải, dẫn đến việc chương trình không kịp hiển thị và gây treo giao diện.
+
+2. Tại sao không nên mở file 500MB bằng Notepad?
+- Notepad có cơ chế hoạt động là tải toàn bộ nội dung file từ ổ cứng trực tiếp vào RAM trước khi hiển thị.
+- Khi mở file dung lượng lớn (lên tới 500MB), lượng RAM tiêu thụ sẽ tăng lên gấp nhiều lần để giải mã định dạng văn bản, khiến máy tính bị cạn kiệt tài nguyên RAM, gây treo cứng hệ thống (Not Responding).
+
+
+PHẦN 2: HOÀN THIỆN
+
+1. Lệnh PowerShell để xem toàn bộ file theo từng trang (từng màn hình một):
+Get-Content server_log_500MB.log | more
+
+2. Lệnh PowerShell để chỉ xem 10 dòng cuối cùng nhằm tìm lỗi mới nhất:
+Get-Content server_log_500MB.log -Tail 10
